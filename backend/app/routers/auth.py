@@ -50,7 +50,7 @@ def user_to_out(user: User) -> UserOut:
 
 
 @router.post("/login")
-@limiter.limit("5/minute")  # Max 5 login attempts per minute (prevents brute force)
+@limiter.limit("60/minute")  # Max 60 login attempts per minute (prevents brute force)
 async def login(request: Request, credentials: UserLogin, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == credentials.username).first()
     

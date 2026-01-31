@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     # App
     SECRET_KEY: str = "change-me-in-production"
     DEBUG: bool = False
+    LOG_LEVEL: str = "WARNING"  # Set to INFO for dev, WARNING for prod HDD
     
     # Deployment
     USE_HTTPS: bool = False  # Set to True in production (Cloudflare automatically does this)

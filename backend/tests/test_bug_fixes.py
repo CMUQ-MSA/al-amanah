@@ -105,7 +105,6 @@ class TestDiscordIDValidation:
 class TestImportTransactionAtomicity:
     """Test import transaction isolation (Bug #1 - Critical)"""
     
-    @pytest.mark.skip(reason="Import schema validation needs separate investigation")
     def test_import_creates_complete_semester(self, admin_client, db_session):
         """Successful import should create all nested data atomically"""
         export_data = {

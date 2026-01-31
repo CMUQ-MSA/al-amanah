@@ -9,6 +9,11 @@ services:
     expose:
       - "8000"
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend-builder:
     build: ./frontend
@@ -28,6 +33,11 @@ services:
       backend:
         condition: service_started
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   frontend_dist:

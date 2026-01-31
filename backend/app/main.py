@@ -28,9 +28,14 @@ from app.routers import (
     export_router
 )
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 settings = get_settings()
+
+# Set log level from config (default: WARNING to save HDD)
+import os
+log_level_str = os.getenv("LOG_LEVEL", settings.LOG_LEVEL)
+log_level = getattr(logging, log_level_str, logging.WARNING)
+logging.basicConfig(level=log_level)
+logger = logging.getLogger(__name__)
 
 # Rate limiter - prevents abuse while allowing normal usage
 limiter = Limiter(key_func=get_remote_address)
