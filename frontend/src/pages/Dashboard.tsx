@@ -399,7 +399,11 @@ const TaskRow = memo(function TaskRow({ task, refresh, updateTask }: { task: Tas
             : <button onClick={markDone} disabled={!canAct || busy} className="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded mt-0.5 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 disabled:opacity-50 transition-colors" />}
           <div>
             <p className={task.status === 'DONE' ? 'line-through text-gray-400' : 'font-medium text-gray-800 dark:text-gray-200'}>{task.task_type === 'SETUP' && <span className="text-primary-400">[Setup] </span>}{task.title}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{task.assignee_name || 'Unassigned'}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {task.assignees && task.assignees.length > 0 
+                ? task.assignees.map(a => a.display_name).join(', ')
+                : task.assignee_name || 'Unassigned'}
+            </p>
             {task.status === 'DONE' && task.completed_by_name && isAdmin && (
               <p className="text-xs text-green-600 dark:text-green-400">✓ Completed by {task.completed_by_name}</p>
             )}
