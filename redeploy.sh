@@ -28,4 +28,13 @@ $COMPOSE_CMD restart nginx >/dev/null 2>&1 || true
 echo "🧹 Pruning old dangling images..."
 docker image prune -f >/dev/null 2>&1 || true
 
+echo "🏥 Verifying health..."
+sleep 5
+if curl -sf http://localhost/api/health | grep -q healthy; then
+  echo "✅ Health check passed"
+else
+  echo "❌ Health check failed - check logs: $COMPOSE_CMD logs backend" >&2
+  exit 1
+fi
+
 echo "✅ Redeploy complete. Containers should be running."
