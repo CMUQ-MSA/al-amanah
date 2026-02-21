@@ -79,10 +79,27 @@ def migrate_db():
             conn.commit()
 
 
+def run_alembic_upgrade():
+    """Run Alembic migrations. Safe for existing DBs (baseline is no-op)."""
+    try:
+        from alembic.config import Config
+        from alembic import command
+        # Resolve path relative to backend root (works in Docker and local)
+        _backend = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        ini_path = os.path.join(_backend, "alembic.ini")
+        if os.path.isfile(ini_path):
+            alembic_cfg = Config(ini_path)
+            command.upgrade(alembic_cfg, "head")
+            logger.info("Alembic migrations applied")
+    except Exception as e:
+        logger.warning("Alembic upgrade skipped (non-fatal): %s", e)
+
+
 def init_db():
     """Initialize database tables and create admin user if needed."""
+    run_alembic_upgrade()  # Run migrations first (baseline no-op for existing DBs)
     Base.metadata.create_all(bind=engine)
-    migrate_db()  # Run migrations for new columns
+    migrate_db()  # Run migrations for new columns (kept for backward compat)
     
     db = SessionLocal()
     try:
