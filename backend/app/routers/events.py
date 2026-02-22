@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
-from app.models import Event, Week, User, Task, TaskStatus, TaskType, TaskAssignment
+from app.models import Event, Week, User, Task, TaskStatus, TaskType, TaskAssignment, RosterMember
+from app.models.user import Role
 from app.schemas import EventCreate, EventUpdate, EventOut
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.discord import send_reminder
@@ -11,16 +12,27 @@ from app.services.discord import send_reminder
 router = APIRouter(prefix="/api", tags=["events"])
 
 
+def _ensure_semester_access(db, user: User, semester_id: int) -> None:
+    if user.role == Role.ADMIN:
+        return
+    in_roster = db.query(RosterMember).filter(
+        RosterMember.semester_id == semester_id,
+        RosterMember.user_id == user.id
+    ).first()
+    if not in_roster:
+        raise HTTPException(status_code=403, detail="Not in roster for this semester")
+
+
 @router.get("/weeks/{week_id}/events", response_model=List[EventOut])
 async def list_events(
     week_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     week = db.query(Week).filter(Week.id == week_id).first()
     if not week:
         raise HTTPException(status_code=404, detail="Week not found")
-    
+    _ensure_semester_access(db, current_user, week.semester_id)
     return db.query(Event).filter(Event.week_id == week_id).order_by(Event.datetime).all()
 
 
@@ -91,11 +103,11 @@ async def send_event_reminders(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     
-    # Get all pending standard tasks for this event
+    # Get all pending tasks (standard + setup) - both can be reminded
     pending_tasks = db.query(Task).filter(
         Task.event_id == event_id,
         Task.status == TaskStatus.PENDING,
-        Task.task_type == TaskType.STANDARD
+        Task.task_type.in_([TaskType.STANDARD, TaskType.SETUP])
     ).all()
     
     if not pending_tasks:

@@ -4,7 +4,7 @@ from typing import List
 from datetime import datetime, timezone
 
 from app.database import get_db
-from app.models import Task, Event, User, TaskStatus, Role, Team, TaskAssignment
+from app.models import Task, Event, User, TaskStatus, Role, Team, TaskAssignment, RosterMember, Week
 from app.schemas import TaskCreate, TaskUpdate, TaskOut, TaskCannotDo, TaskReminder
 from app.schemas.task import AssigneeInfo
 from app.middleware.auth import get_current_user, get_admin_user
@@ -74,6 +74,17 @@ def task_to_out(task: Task, db: Session) -> TaskOut:
     )
 
 
+def _ensure_semester_access(db, user: User, semester_id: int) -> None:
+    if user.role == Role.ADMIN:
+        return
+    in_roster = db.query(RosterMember).filter(
+        RosterMember.semester_id == semester_id,
+        RosterMember.user_id == user.id
+    ).first()
+    if not in_roster:
+        raise HTTPException(status_code=403, detail="Not in roster for this semester")
+
+
 @router.get("/events/{event_id}/tasks", response_model=List[TaskOut])
 async def list_tasks(
     event_id: int,
@@ -83,7 +94,9 @@ async def list_tasks(
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    
+    week = db.query(Week).filter(Week.id == event.week_id).first()
+    if week:
+        _ensure_semester_access(db, current_user, week.semester_id)
     tasks = db.query(Task).filter(Task.event_id == event_id).all()
     return [task_to_out(t, db) for t in tasks]
 

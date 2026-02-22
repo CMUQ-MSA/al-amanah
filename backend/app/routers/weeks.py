@@ -3,23 +3,36 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
-from app.models import Week, Semester, User
+from app.models import Week, Semester, User, RosterMember
+from app.models.user import Role
 from app.schemas import WeekCreate, WeekUpdate, WeekOut
 from app.middleware.auth import get_current_user, get_admin_user
 
 router = APIRouter(prefix="/api", tags=["weeks"])
 
 
+def _ensure_semester_access(db: Session, user: User, semester_id: int) -> None:
+    """Raise 403 if user cannot access semester (admin or roster member)."""
+    if user.role == Role.ADMIN:
+        return
+    in_roster = db.query(RosterMember).filter(
+        RosterMember.semester_id == semester_id,
+        RosterMember.user_id == user.id
+    ).first()
+    if not in_roster:
+        raise HTTPException(status_code=403, detail="Not in roster for this semester")
+
+
 @router.get("/semesters/{semester_id}/weeks", response_model=List[WeekOut])
 async def list_weeks(
     semester_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     semester = db.query(Semester).filter(Semester.id == semester_id).first()
     if not semester:
         raise HTTPException(status_code=404, detail="Semester not found")
-    
+    _ensure_semester_access(db, current_user, semester_id)
     return db.query(Week).filter(Week.semester_id == semester_id).order_by(Week.week_number).all()
 
 

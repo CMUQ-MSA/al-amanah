@@ -25,7 +25,7 @@ describe('Logo Theme Reactivity (Bug #5)', () => {
 
 describe('Week Boundary UI (Bug #8)', () => {
   it('AdminPanel has week boundary tooltips', () => {
-    const content = readFileSync(join(__dirname, '../src/pages/AdminPanel.tsx'), 'utf-8');
+    const content = readFileSync(join(__dirname, '../src/features/admin/components/RosterManager.tsx'), 'utf-8');
     expect(content).toContain('title="Week starts on Sunday"');
     expect(content).toContain('Sunday-Saturday');
   });

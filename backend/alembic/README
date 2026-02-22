@@ -1,0 +1,20 @@
+# Alembic Migrations
+
+## One-Time Production Stamp (CRITICAL)
+
+**Before the first deploy** with this Alembic setup, on the **server** (where the production DB lives):
+
+```bash
+cd /path/to/al-amanah
+docker compose run --rm backend alembic stamp head
+```
+
+Then deploy (e.g. `./redeploy.sh`). This stamps the existing DB so `upgrade head` does nothing on startup and avoids "table already exists" errors.
+
+## Future Schema Changes
+
+1. Edit models in `backend/app/models/`
+2. `cd backend && alembic revision --autogenerate -m "Description"`
+3. Review the migration in `alembic/versions/`
+4. `alembic upgrade head` locally
+5. Commit the migration file, deploy; `init_db()` runs `upgrade head` on startup

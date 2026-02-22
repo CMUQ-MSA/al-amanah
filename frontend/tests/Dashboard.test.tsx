@@ -112,17 +112,47 @@ describe('Dashboard Page', () => {
   });
 
   describe('Task Status Display', () => {
-    it('shows done count for event', async () => {
+    it('shows done count for event (only standard tasks count)', async () => {
       const doneTask = createTaskWithStatus('DONE');
       const pendingTask = createTaskWithStatus('PENDING');
       const event = createEvent([doneTask, pendingTask]);
       const data = createDashboardData([event]);
       vi.mocked(api.getDashboard).mockResolvedValue(data);
-      
+
       renderDashboard();
-      
+
       await waitFor(() => {
         expect(screen.getByText('1/2 done')).toBeInTheDocument();
+      });
+    });
+
+    it('excludes setup tasks from done count', async () => {
+      const doneTask = createTaskWithStatus('DONE');
+      doneTask.task_type = 'STANDARD';
+      const setupTask = createTaskWithStatus('PENDING');
+      setupTask.task_type = 'SETUP';
+      const event = createEvent([doneTask, setupTask]);
+      const data = createDashboardData([event]);
+      vi.mocked(api.getDashboard).mockResolvedValue(data);
+
+      renderDashboard();
+
+      await waitFor(() => {
+        expect(screen.getByText('1/1 done')).toBeInTheDocument();
+      });
+    });
+
+    it('shows em dash when no standard tasks', async () => {
+      const setupTask = createTaskWithStatus('PENDING');
+      setupTask.task_type = 'SETUP';
+      const event = createEvent([setupTask]);
+      const data = createDashboardData([event]);
+      vi.mocked(api.getDashboard).mockResolvedValue(data);
+
+      renderDashboard();
+
+      await waitFor(() => {
+        expect(screen.getByText('—')).toBeInTheDocument();
       });
     });
 

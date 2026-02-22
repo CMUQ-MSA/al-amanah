@@ -22,6 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const handle401 = () => setUser(null);
+    window.addEventListener('auth:401', handle401);
+    return () => window.removeEventListener('auth:401', handle401);
+  }, []);
+
   const login = async (username: string, password: string) => {
     const userData = await api.login(username, password);
     setUser(userData);

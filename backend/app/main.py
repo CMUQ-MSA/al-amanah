@@ -2,11 +2,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.database import Base, engine, SessionLocal
+from app.database import SessionLocal
+from app.limiter import limiter
 from app.config import get_settings
 from app.models import User, Role
 from app.middleware.auth import hash_password
@@ -37,69 +37,50 @@ log_level = getattr(logging, log_level_str, logging.WARNING)
 logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 
-# Rate limiter - prevents abuse while allowing normal usage
-limiter = Limiter(key_func=get_remote_address)
-
-
 # Smart CORS: Allow the actual origin when it's HTTPS (Cloudflare) or localhost (dev)
-def get_allowed_origins():
+def get_cors_config():
     """
-    Get allowed CORS origins based on environment.
-    - Local dev: localhost origins
-    - Production: Allow any HTTPS origin (safe because Cloudflare enforces HTTPS)
+    Get CORS config based on environment.
+    - Local dev: specific localhost origins
+    - Production: regex for any HTTPS origin (Cloudflare enforces HTTPS)
     """
     if settings.DEBUG:
-        # Dev mode: localhost only
-        return ["http://localhost:5173", "http://localhost:3000", "http://localhost"]
+        return {"allow_origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost"]}
     else:
-        # Production: Allow any HTTPS origin (they come through Cloudflare tunnel which enforces HTTPS)
-        # For security: only allow HTTPS in production
-        return ["https://*"]
-
-
-def migrate_db():
-    """Run simple migrations for new columns (SQLite doesn't auto-add columns)."""
-    from sqlalchemy import text
-    
-    with engine.connect() as conn:
-        # Check and add overrides_default_id to event_templates
-        try:
-            conn.execute(text("SELECT overrides_default_id FROM event_templates LIMIT 1"))
-        except Exception:
-            logger.info("Adding overrides_default_id column to event_templates...")
-            conn.execute(text("ALTER TABLE event_templates ADD COLUMN overrides_default_id VARCHAR(50)"))
-            conn.commit()
-        
-        # Check and add overrides_default_id to week_templates
-        try:
-            conn.execute(text("SELECT overrides_default_id FROM week_templates LIMIT 1"))
-        except Exception:
-            logger.info("Adding overrides_default_id column to week_templates...")
-            conn.execute(text("ALTER TABLE week_templates ADD COLUMN overrides_default_id VARCHAR(50)"))
-            conn.commit()
+        # allow_origins doesn't support wildcards; use regex for HTTPS
+        return {"allow_origin_regex": r"https://.*"}
 
 
 def run_alembic_upgrade():
-    """Run Alembic migrations. Safe for existing DBs (baseline is no-op)."""
-    try:
-        from alembic.config import Config
-        from alembic import command
-        # Resolve path relative to backend root (works in Docker and local)
-        _backend = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        ini_path = os.path.join(_backend, "alembic.ini")
-        if os.path.isfile(ini_path):
-            alembic_cfg = Config(ini_path)
-            command.upgrade(alembic_cfg, "head")
-            logger.info("Alembic migrations applied")
-    except Exception as e:
-        logger.warning("Alembic upgrade skipped (non-fatal): %s", e)
+    """Run Alembic migrations (creates tables on fresh DB)."""
+    from alembic.config import Config
+    from alembic import command
+    _backend = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    ini_path = os.path.join(_backend, "alembic.ini")
+    alembic_cfg = Config(ini_path)
+    command.upgrade(alembic_cfg, "head")
+    logger.info("Alembic migrations applied")
+
+
+def _validate_production_secrets():
+    """Fail fast if production uses default secrets."""
+    if settings.DEBUG:
+        return
+    if settings.SECRET_KEY == "change-me-in-production":
+        raise RuntimeError(
+            "SECRET_KEY must be set in .env for production. "
+            "Generate with: openssl rand -hex 32"
+        )
+    if settings.ADMIN_PASSWORD == "changeme123":
+        raise RuntimeError(
+            "ADMIN_PASSWORD must be changed in .env for production."
+        )
 
 
 def init_db():
     """Initialize database tables and create admin user if needed."""
-    run_alembic_upgrade()  # Run migrations first (baseline no-op for existing DBs)
-    Base.metadata.create_all(bind=engine)
-    migrate_db()  # Run migrations for new columns (kept for backward compat)
+    _validate_production_secrets()
+    run_alembic_upgrade()
     
     db = SessionLocal()
     try:
@@ -144,14 +125,14 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware - allows requests from configured frontend
-allowed_origins = get_allowed_origins()
+cors_config = get_cors_config()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    max_age=3600  # Cache preflight responses for 1 hour
+    max_age=3600,  # Cache preflight responses for 1 hour
+    **cors_config
 )
 
 # Include routers
@@ -173,4 +154,13 @@ app.include_router(export_router)
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Health check: basic status + DB connectivity."""
+    from sqlalchemy import text
+    from app.database import engine
+    db_ok = True
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        db_ok = False
+    return {"status": "healthy", "database": "ok" if db_ok else "error"}

@@ -5,6 +5,7 @@
 
 # Data & Database
 data/
+backups/
 *.db
 *.sqlite3
 

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
@@ -19,6 +17,15 @@ services:
     build: ./frontend
     volumes:
       - frontend_dist:/output
+
+  frontend-test:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm ci && npm run test:run"
+    profiles:
+      - test
 
   nginx:
     image: nginx:alpine

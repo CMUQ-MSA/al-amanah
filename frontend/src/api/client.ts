@@ -5,6 +5,18 @@ import type {
 
 const API_BASE = '/api';
 
+export class ApiError extends Error {
+  public status: number;
+  public data: any;
+
+  constructor(status: number, message: string, data?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -17,14 +29,20 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: 'Request failed' }));
+    if (res.status === 401) {
+      window.dispatchEvent(new CustomEvent('auth:401'));
+      // Login endpoint returns credential errors; other 401s are session expiry
+      const msg = endpoint === '/auth/login' ? (error.detail || 'Invalid credentials') : 'Session expired';
+      throw new ApiError(401, msg, error);
+    }
     // Handle validation errors (422) with detailed message
     if (res.status === 422 && Array.isArray(error.detail)) {
       const messages = error.detail.map((e: { loc?: string[]; msg?: string }) => 
         `${e.loc?.join('.') || 'field'}: ${e.msg || 'invalid'}`
       ).join('; ');
-      throw new Error(messages);
+      throw new ApiError(422, messages, error.detail);
     }
-    throw new Error(error.detail || 'Request failed');
+    throw new ApiError(res.status, error.detail || 'Request failed', error);
   }
 
   if (res.status === 204) return undefined as T;

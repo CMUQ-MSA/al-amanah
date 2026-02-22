@@ -136,7 +136,7 @@ async def get_dashboard(
                         or_(
                             Task.assigned_to == current_user.id,
                             Task.assigned_team_id == current_user.team_id,
-                            Task.id.in_(user_assigned_task_ids) if user_assigned_task_ids else False
+                            Task.id.in_(user_assigned_task_ids)
                         )
                     )
                 else:

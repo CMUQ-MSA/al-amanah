@@ -3,13 +3,11 @@ FROM node:20-alpine as build
 
 WORKDIR /app
 
-# Copy package.json (package-lock.json may not exist)
-COPY package.json ./
+# Copy deps first for better layer caching
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm install
-
-# Copy source files
+# Copy source (tests excluded via .dockerignore to keep image lean)
 COPY . .
 
 # Build the app

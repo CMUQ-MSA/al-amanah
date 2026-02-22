@@ -15,7 +15,7 @@ docker-compose up -d --build
 
 # 3. Access
 # App: http://localhost
-# API docs: http://localhost/api/docs
+# API docs: http://localhost/docs
 ```
 
 ## What Is This?
@@ -73,7 +73,7 @@ docker-compose up -d --build
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│  SQLite Database @ ./data/app.db                    │
+│  SQLite Database @ ./data/msa_tracker.db            │
 │  - 12 tables (users, tasks, events, etc.)           │
 │  - Persistent across restarts                       │
 └─────────────────────────────────────────────────────┘
@@ -87,6 +87,7 @@ Optional: Cloudflare Tunnel for HTTPS/outbound-only access
 
 ```bash
 SECRET_KEY=<32+ char random string>
+DATABASE_URL=sqlite:///./data/msa_tracker.db
 REMINDER_WEBHOOK_URL=<Discord webhook for reminders>
 ADMIN_WEBHOOK_URL=<Discord webhook for admin alerts>
 ADMIN_USERNAME=admin
@@ -94,9 +95,16 @@ ADMIN_PASSWORD=<secure password>
 ADMIN_DISCORD_ID=<optional Discord ID for admin>
 ```
 
+**Optional:**
+```bash
+LOG_LEVEL=WARNING          # INFO for dev, WARNING for prod
+USE_HTTPS=False            # Auto-detected from Cloudflare headers
+DISCORD_ENABLED=True       # Set False to disable notifications
+```
+
 **Auto-created on first run:**
 - Admin user from `ADMIN_USERNAME` / `ADMIN_PASSWORD`
-- SQLite database at `./data/app.db`
+- SQLite database at `./data/msa_tracker.db`
 
 ## Deployment
 
@@ -121,14 +129,15 @@ docker-compose up -d --build
 ## Testing
 
 ```bash
-# Backend
+# Backend (from container)
+docker-compose run --rm backend pytest -v
+
+# Frontend (from container)
+docker-compose --profile test run --rm frontend-test
+
+# Local (if node/python installed)
 cd backend && pytest -v
-
-# Frontend
-cd frontend && npm test
-
-# Docker + integration
-docker-compose exec backend pytest
+cd frontend && npm run test:run
 ```
 
 ## Key Files
@@ -143,7 +152,7 @@ docker-compose exec backend pytest
 ## Known Limitations
 
 - **Single active semester** at a time (by design)
-- **SQLite only** (no production database migration path yet)
+- **SQLite only** (Alembic migrations supported)
 - **Session auth only** (suitable for small teams, not enterprise)
 - **Timezone fixed to Qatar** (hardcoded in models)
 - **No real-time updates** (refresh required to see others' changes)

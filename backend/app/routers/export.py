@@ -20,14 +20,14 @@ router = APIRouter(prefix="/api/export", tags=["export"])
 
 class ExportTask(BaseModel):
     title: str
-    description: Optional[str]
+    description: Optional[str] = None
     task_type: str
     status: str
-    assigned_to_username: Optional[str]
-    assigned_team_name: Optional[str]
+    assigned_to_username: Optional[str] = None
+    assigned_team_name: Optional[str] = None
     assigned_pool_usernames: List[str] = []  # Multi-user pool assignments
-    completed_by_username: Optional[str]
-    cannot_do_reason: Optional[str]
+    completed_by_username: Optional[str] = None
+    cannot_do_reason: Optional[str] = None
 
 
 class ExportEvent(BaseModel):

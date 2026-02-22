@@ -85,7 +85,7 @@ class TestUpdateEventTemplate:
         create_response = admin_client.post("/api/templates/events", json={
             "name": "Updateable Template"
         })
-        template_id = int(create_response.json()["id"].replace("db_", ""))
+        template_id = create_response.json()["id"]  # e.g. "db_1"
         
         # Update it
         response = admin_client.put(f"/api/templates/events/{template_id}", json={
@@ -111,7 +111,7 @@ class TestDeleteEventTemplate:
         create_response = admin_client.post("/api/templates/events", json={
             "name": "Deleteable Template"
         })
-        template_id = int(create_response.json()["id"].replace("db_", ""))
+        template_id = create_response.json()["id"]  # e.g. "db_1"
         
         # Delete
         response = admin_client.delete(f"/api/templates/events/{template_id}")

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from app.models.task import TaskType, TaskStatus
@@ -55,7 +55,7 @@ class TaskOut(BaseModel):
 
 
 class TaskCannotDo(BaseModel):
-    reason: str
+    reason: str = Field(..., max_length=2000, description="Reason task cannot be done")
 
 
 class TaskReminder(BaseModel):
