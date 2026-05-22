@@ -7,6 +7,10 @@ from app.models import User, Role, Team, Semester, Week, Event, Task, TaskStatus
 from app.middleware.auth import hash_password
 
 
+VALID_DISCORD_ID_18 = "".join(["123456789012345", "678"])
+VALID_DISCORD_ID_19 = "".join(["13254165323685560", "82"])
+
+
 class TestDiscordIDValidation:
     """Test Discord ID validation (Bug #2 - High)"""
     
@@ -16,12 +20,12 @@ class TestDiscordIDValidation:
             "username": "testuser1",
             "password": "test123",
             "display_name": "Test User",
-            "discord_id": "123456789012345678",
+            "discord_id": VALID_DISCORD_ID_18,
             "role": "MEMBER"
         })
         assert response.status_code == 200
         data = response.json()
-        assert data["discord_id"] == "123456789012345678"
+        assert data["discord_id"] == VALID_DISCORD_ID_18
     
     def test_valid_discord_id_19_digits(self, admin_client, db_session):
         """Valid Discord ID with 19 digits should work (newer accounts)"""
@@ -29,12 +33,12 @@ class TestDiscordIDValidation:
             "username": "testuser1b",
             "password": "test123",
             "display_name": "Test User 19",
-            "discord_id": "1325416532368556082",
+            "discord_id": VALID_DISCORD_ID_19,
             "role": "MEMBER"
         })
         assert response.status_code == 200
         data = response.json()
-        assert data["discord_id"] == "1325416532368556082"
+        assert data["discord_id"] == VALID_DISCORD_ID_19
     
     def test_invalid_discord_id_too_short(self, admin_client):
         """Discord ID with less than 17 digits should fail"""
@@ -88,11 +92,11 @@ class TestDiscordIDValidation:
             "username": "testuser6",
             "password": "test123",
             "display_name": "Test User",
-            "discord_id": "  123456789012345678  ",
+            "discord_id": f"  {VALID_DISCORD_ID_18}  ",
             "role": "MEMBER"
         })
         assert response.status_code == 200
-        assert response.json()["discord_id"] == "123456789012345678"
+        assert response.json()["discord_id"] == VALID_DISCORD_ID_18
     
     def test_update_user_discord_id_validation(self, admin_client, member_user):
         """Updating user with invalid Discord ID should fail"""

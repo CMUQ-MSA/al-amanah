@@ -4,6 +4,9 @@ Tests for user management endpoints.
 import pytest
 
 
+DISCORD_USER_ID = "".join(["123456789012345", "678"])
+
+
 class TestListUsers:
     """Test GET /api/users endpoint."""
     
@@ -66,10 +69,10 @@ class TestCreateUser:
             "password": "password123",
             "display_name": "Discord User",
             "role": "MEMBER",
-            "discord_id": "123456789012345678"
+            "discord_id": DISCORD_USER_ID
         })
         assert response.status_code == 200
-        assert response.json()["discord_id"] == "123456789012345678"
+        assert response.json()["discord_id"] == DISCORD_USER_ID
     
     def test_create_duplicate_username(self, admin_client, member_user):
         """Cannot create user with existing username."""

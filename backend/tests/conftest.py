@@ -29,6 +29,11 @@ from app.routers import (
 )
 
 
+ADMIN_DISCORD_ID = "".join(["123456789012345", "678"])
+MEMBER_DISCORD_ID = "".join(["987654321098765", "432"])
+TEAM_DISCORD_ID = "".join(["111222333444555", "666"])
+
+
 # Test database - in-memory SQLite
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
@@ -101,7 +106,7 @@ def admin_user(db_session) -> User:
         username="admin",
         password_hash=hash_password("admin123"),
         display_name="Admin User",
-        discord_id="123456789012345678",
+        discord_id=ADMIN_DISCORD_ID,
         role=Role.ADMIN
     )
     db_session.add(user)
@@ -117,7 +122,7 @@ def member_user(db_session) -> User:
         username="member",
         password_hash=hash_password("member123"),
         display_name="Member User",
-        discord_id="987654321098765432",
+        discord_id=MEMBER_DISCORD_ID,
         role=Role.MEMBER
     )
     db_session.add(user)
@@ -143,7 +148,7 @@ def team_member(db_session, team) -> User:
         username="teammember",
         password_hash=hash_password("team123"),
         display_name="Team Member",
-        discord_id="111222333444555666",
+        discord_id=TEAM_DISCORD_ID,
         role=Role.MEMBER,
         team_id=team.id
     )

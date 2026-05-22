@@ -476,7 +476,7 @@ ADMIN_WEBHOOK_URL=https://discord.com/api/webhooks/aaa/bbb
 # First Admin User (created on first run)
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=changeme123
-ADMIN_DISCORD_ID=123456789012345678
+ADMIN_DISCORD_ID=<discord-user-id>
 ```
 
 ---
