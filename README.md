@@ -126,6 +126,8 @@ docker-compose up -d --build
 # For HTTPS: cloudflared tunnel --url http://localhost:80
 ```
 
+In CMUQ-MSA production, this app is intended to run at **tasks.cmuqmsa.org**. The central `cmuqmsa-infra` Caddy router sends that hostname to this app's nginx service on internal port `80`; nginx serves the React frontend and proxies `/api` to FastAPI.
+
 ## Testing
 
 ```bash
@@ -190,4 +192,3 @@ Uses FastAPI, React, SQLAlchemy, Tailwind CSS, and APScheduler.
 ---
 
 **Questions?** See [BUG_REPORT.md](./BUG_REPORT.md) or [PLAN.md](./PLAN.md) for architecture details.
-
