@@ -30,7 +30,7 @@ docker image prune -f >/dev/null 2>&1 || true
 
 echo "🏥 Verifying health..."
 sleep 5
-if curl -sf http://localhost/api/health | grep -q healthy; then
+if curl -sf http://localhost:8080/api/health | grep -q healthy; then
   echo "✅ Health check passed"
 else
   echo "❌ Health check failed - check logs: $COMPOSE_CMD logs backend" >&2

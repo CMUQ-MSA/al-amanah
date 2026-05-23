@@ -1,6 +1,3 @@
-docker-compose up -d
-tunnel: msa-tracker
-ingress:
 # Cloudflare Tunnel Deployment (msa-tracker → tasks.cmuqmsa.org)
 
 This repo defaults to Cloudflare Tunnel for HTTPS. Use the quick tunnel for testing, the named tunnel for production on `tasks.cmuqmsa.org` (tunnel name `msa-tracker`).
@@ -23,7 +20,7 @@ Edit `.env` (already has defaults):
 ```bash
 CF_TUNNEL_NAME=msa-tracker
 CF_TUNNEL_HOSTNAME=tasks.cmuqmsa.org
-CF_LOCAL_SERVICE=http://localhost:80
+CF_LOCAL_SERVICE=http://localhost:8080
 ```
 
 Run with `./deploy-cloudflare.sh` (or set `CLOUDFLARE_ENV` to point elsewhere).
@@ -52,7 +49,7 @@ tunnel: msa-tracker
 credentials-file: ~/.cloudflared/msa-tracker.json
 ingress:
   - hostname: tasks.cmuqmsa.org
-    service: http://localhost:80
+    service: http://localhost:8080
   - service: http_status:404
 EOF
 
@@ -75,7 +72,7 @@ sudo journalctl -u cloudflared -f
 
 ```bash
 curl -s https://tasks.cmuqmsa.org/api/health
-# -> {"status":"healthy"}
+# -> {"status":"healthy","database":"ok"}
 ```
 
 If auth loops, ensure you are on https and cookies are enabled. Tunnel must be running.

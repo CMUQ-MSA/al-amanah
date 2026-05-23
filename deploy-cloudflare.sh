@@ -1,7 +1,7 @@
 #!/bin/bash
 # Cloudflare Tunnel Deploy
 # Usage: CF env file (optional): CLOUDFLARE_ENV=.cloudflared.env ./deploy-cloudflare.sh
-# Vars: CF_TUNNEL_NAME=msa-tracker, CF_TUNNEL_HOSTNAME=tasks.cmuqmsa.org, CF_LOCAL_SERVICE=http://localhost:80
+# Vars: CF_TUNNEL_NAME=msa-tracker, CF_TUNNEL_HOSTNAME=tasks.cmuqmsa.org, CF_LOCAL_SERVICE=http://localhost:8080
 
 set -e
 
@@ -13,7 +13,7 @@ fi
 
 TUNNEL_NAME="${CF_TUNNEL_NAME:-}"
 TUNNEL_HOSTNAME="${CF_TUNNEL_HOSTNAME:-}"
-LOCAL_SERVICE="${CF_LOCAL_SERVICE:-http://localhost:80}"
+LOCAL_SERVICE="${CF_LOCAL_SERVICE:-http://localhost:8080}"
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -122,7 +122,7 @@ sleep 3
 # Step 4: Test local health
 echo -e "\n${YELLOW}[4/5]${NC} Testing local deployment..."
 HEALTH=$(curl -s "${LOCAL_SERVICE%/}/api/health" 2>/dev/null || echo "")
-if [ "$HEALTH" = '{"status":"healthy"}' ]; then
+if echo "$HEALTH" | grep -q '"status":"healthy"'; then
     echo -e "${GREEN}✓ Local deployment healthy${NC}"
 else
     echo -e "${RED}✗ Local deployment not responding. Check logs: docker compose logs${NC}"
