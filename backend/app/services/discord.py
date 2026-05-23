@@ -8,6 +8,18 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+def _safe_webhook_error(exc: Exception) -> str:
+    """Return webhook error details without including the secret webhook URL."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        response = exc.response
+        return f"HTTP {response.status_code}"
+    if isinstance(exc, httpx.TimeoutException):
+        return "request timed out"
+    if isinstance(exc, httpx.RequestError):
+        return exc.__class__.__name__
+    return exc.__class__.__name__
+
+
 async def _send_webhook_with_retry(url: str, message: dict, max_retries: int = 3) -> bool:
     """Send webhook with exponential backoff retry."""
     for attempt in range(max_retries):
@@ -23,10 +35,19 @@ async def _send_webhook_with_retry(url: str, message: dict, max_retries: int = 3
         except Exception as e:
             if attempt < max_retries - 1:
                 wait_time = 2 ** attempt  # 1s, 2s, 4s
-                logger.warning(f"Discord webhook attempt {attempt + 1} failed: {e}. Retrying in {wait_time}s...")
+                logger.warning(
+                    "Discord webhook attempt %s failed: %s. Retrying in %ss...",
+                    attempt + 1,
+                    _safe_webhook_error(e),
+                    wait_time,
+                )
                 await asyncio.sleep(wait_time)
             else:
-                logger.error(f"Discord webhook failed after {max_retries} attempts: {e}")
+                logger.error(
+                    "Discord webhook failed after %s attempts: %s",
+                    max_retries,
+                    _safe_webhook_error(e),
+                )
                 return False
     return False
 

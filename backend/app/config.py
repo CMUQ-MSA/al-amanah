@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     
     # Deployment
     USE_HTTPS: bool = False  # Set to True in production (Cloudflare automatically does this)
+    ALLOWED_ORIGINS: str = "https://tasks.cmuqmsa.org"
     
     # Database
     DATABASE_URL: str = "sqlite:///./data/msa_tracker.db"

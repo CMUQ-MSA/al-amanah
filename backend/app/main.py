@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
 from slowapi import _rate_limit_exceeded_handler
@@ -37,18 +38,21 @@ log_level = getattr(logging, log_level_str, logging.WARNING)
 logging.basicConfig(level=log_level)
 logger = logging.getLogger(__name__)
 
-# Smart CORS: Allow the actual origin when it's HTTPS (Cloudflare) or localhost (dev)
+# Smart CORS: allow local dev origins in DEBUG and explicit origins in production.
 def get_cors_config():
     """
     Get CORS config based on environment.
     - Local dev: specific localhost origins
-    - Production: regex for any HTTPS origin (Cloudflare enforces HTTPS)
+    - Production: explicit configured origins only
     """
     if settings.DEBUG:
         return {"allow_origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost"]}
-    else:
-        # allow_origins doesn't support wildcards; use regex for HTTPS
-        return {"allow_origin_regex": r"https://.*"}
+    origins = [
+        origin.strip()
+        for origin in settings.ALLOWED_ORIGINS.split(",")
+        if origin.strip()
+    ]
+    return {"allow_origins": origins}
 
 
 def run_alembic_upgrade():
@@ -66,12 +70,18 @@ def _validate_production_secrets():
     """Fail fast if production uses default secrets."""
     if settings.DEBUG:
         return
-    if settings.SECRET_KEY == "change-me-in-production":
+    placeholder_secret_keys = {
+        "change-me",
+        "change-me-in-production",
+        "change-this-to-a-random-string-at-least-32-chars",
+        "replace-with-32-plus-random-chars",
+    }
+    if settings.SECRET_KEY in placeholder_secret_keys or len(settings.SECRET_KEY) < 32:
         raise RuntimeError(
-            "SECRET_KEY must be set in .env for production. "
+            "SECRET_KEY must be a non-placeholder 32+ character value in production. "
             "Generate with: openssl rand -hex 32"
         )
-    if settings.ADMIN_PASSWORD == "changeme123":
+    if settings.ADMIN_PASSWORD in {"changeme123", "replace-with-secure-password"}:
         raise RuntimeError(
             "ADMIN_PASSWORD must be changed in .env for production."
         )
@@ -117,7 +127,10 @@ app = FastAPI(
     title="MSA Task Tracker",
     description="CMU Qatar Muslim Student Association Task Tracker",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 # Add rate limiter
@@ -163,4 +176,5 @@ async def health_check():
             conn.execute(text("SELECT 1"))
     except Exception:
         db_ok = False
-    return {"status": "healthy", "database": "ok" if db_ok else "error"}
+    content = {"status": "healthy" if db_ok else "unhealthy", "database": "ok" if db_ok else "error"}
+    return JSONResponse(status_code=200 if db_ok else 503, content=content)
