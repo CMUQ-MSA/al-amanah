@@ -2,6 +2,8 @@
 
 A real-time **Semester → Week → Event → Task** management system for coordinating MSA (Muslim Student Association) events at CMU Qatar with Discord notifications.
 
+> **Production:** Deploy **tasks.cmuqmsa.org** from [cmuqmsa-infra](https://github.com/CMUQ-MSA/cmuqmsa-infra), not this repo’s `docker-compose.yml`. The per-app compose file is legacy and can bind host ports that conflict with unified infra (Caddy on `localhost:8080`). Use it only when debugging this app alone.
+
 ## Quick Start
 
 ```bash
@@ -14,8 +16,8 @@ cp .env.example .env
 docker-compose up -d --build
 
 # 3. Access
-# App: http://localhost
-# API docs: http://localhost/docs
+# App: http://localhost:8080
+# API docs are available only when DEBUG=true
 ```
 
 ## What Is This?
@@ -59,7 +61,7 @@ docker-compose up -d --build
 └──────────────────┬──────────────────────────────────┘
                    │ (HTTP + session cookies)
 ┌──────────────────▼──────────────────────────────────┐
-│  nginx Reverse Proxy @ :80                          │
+│  nginx Reverse Proxy @ :8080                        │
 │  - Intercepts requests                              │
 │  - Routes /api → backend, / → frontend              │
 └──────────────────┬──────────────────────────────────┘
@@ -99,6 +101,7 @@ ADMIN_DISCORD_ID=<optional Discord ID for admin>
 ```bash
 LOG_LEVEL=WARNING          # INFO for dev, WARNING for prod
 USE_HTTPS=False            # Auto-detected from Cloudflare headers
+ALLOWED_ORIGINS=https://tasks.cmuqmsa.org
 DISCORD_ENABLED=True       # Set False to disable notifications
 ```
 
@@ -123,10 +126,10 @@ cd frontend && npm install && npm run dev  # Runs on :5173
 ```bash
 docker-compose up -d --build
 # Runs on http://localhost (nginx proxy)
-# For HTTPS: cloudflared tunnel --url http://localhost:80
+# For HTTPS: cloudflared tunnel --url http://localhost:8080
 ```
 
-In CMUQ-MSA production, this app is intended to run at **tasks.cmuqmsa.org**. The central `cmuqmsa-infra` Caddy router sends that hostname to this app's nginx service on internal port `80`; nginx serves the React frontend and proxies `/api` to FastAPI.
+In CMUQ-MSA production, this app is intended to run at **tasks.cmuqmsa.org**. The central `cmuqmsa-infra` Caddy router sends that hostname to this app's nginx service on internal port `8080`; nginx serves the React frontend and proxies `/api` to FastAPI.
 
 ## Testing
 
@@ -182,7 +185,7 @@ cd frontend && npm run test:run
 | Tasks not showing | Check semester is active (Admin → Semesters) |
 | Reminders not sent | Check Discord webhooks in `.env` and bot has permission |
 | Timezone mismatch | Events stored in UTC, display in browser TZ (not Qatar hardcoded) |
-| Port 80 in use | `docker-compose.yml` uses port 80; change to `81:80` if needed |
+| Port 8080 in use | `docker-compose.yml` binds nginx to `127.0.0.1:8080`; change the local mapping if needed |
 
 ## License & Attribution
 

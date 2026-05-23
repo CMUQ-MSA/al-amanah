@@ -1,3 +1,15 @@
+# LEGACY STANDALONE COMPOSE — DO NOT USE FOR PRODUCTION
+#
+# This file is for local debugging of al-amanah (tasks) by itself only.
+# Production deployment is managed from the cmuqmsa-infra repository
+# (https://github.com/CMUQ-MSA/cmuqmsa-infra).
+#
+# Do not run this on the server unless you are intentionally debugging
+# this app in isolation. It publishes host ports (for example 127.0.0.1:8080)
+# and can conflict with the unified infra stack (Caddy + Cloudflare Tunnel).
+#
+# See cmuqmsa-infra/docs/runbook.md for the supported deployment flow.
+
 services:
   backend:
     build: ./backend
@@ -13,11 +25,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  frontend-builder:
-    build: ./frontend
-    volumes:
-      - frontend_dist:/output
-
   frontend-test:
     image: node:20-alpine
     working_dir: /app
@@ -28,23 +35,17 @@ services:
       - test
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     ports:
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - frontend_dist:/usr/share/nginx/html:ro
+      - "127.0.0.1:8080:8080"
     depends_on:
-      frontend-builder:
-        condition: service_completed_successfully
       backend:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-
-volumes:
-  frontend_dist:
