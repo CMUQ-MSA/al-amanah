@@ -2,8 +2,6 @@
 
 A real-time **Semester → Week → Event → Task** management system for coordinating MSA (Muslim Student Association) events at CMU Qatar with Discord notifications.
 
-> **Production:** Deploy **tasks.cmuqmsa.org** from [cmuqmsa-infra](https://github.com/CMUQ-MSA/cmuqmsa-infra), not this repo’s `docker-compose.yml`. The per-app compose file is legacy and can bind host ports that conflict with unified infra (Caddy on `localhost:8080`). Use it only when debugging this app alone.
-
 ## Quick Start
 
 ```bash
@@ -48,7 +46,7 @@ docker-compose up -d --build
 
 **Backend:** FastAPI 0.109 + SQLAlchemy ORM + SQLite  
 **Frontend:** React 18 + Vite + TypeScript + Tailwind CSS  
-**Infrastructure:** Docker Compose (backend + nginx proxy) + optional Cloudflare Tunnel  
+**Infrastructure:** Docker Compose (backend + nginx proxy) + optional HTTPS reverse proxy
 **Auth:** Session-based (signed cookies, not JWT)  
 
 ### How It Links Together
@@ -80,7 +78,7 @@ docker-compose up -d --build
 │  - Persistent across restarts                       │
 └─────────────────────────────────────────────────────┘
 
-Optional: Cloudflare Tunnel for HTTPS/outbound-only access
+Optional: HTTPS reverse proxy or tunnel in front of nginx for public access
 ```
 
 ## Environment Setup
@@ -101,7 +99,7 @@ ADMIN_DISCORD_ID=<optional Discord ID for admin>
 ```bash
 LOG_LEVEL=WARNING          # INFO for dev, WARNING for prod
 USE_HTTPS=False            # Auto-detected from Cloudflare headers
-ALLOWED_ORIGINS=https://tasks.cmuqmsa.org
+ALLOWED_ORIGINS=https://your-public-host.example
 DISCORD_ENABLED=True       # Set False to disable notifications
 ```
 
@@ -126,10 +124,9 @@ cd frontend && npm install && npm run dev  # Runs on :5173
 ```bash
 docker-compose up -d --build
 # Runs on http://localhost (nginx proxy)
-# For HTTPS: cloudflared tunnel --url http://localhost:8080
 ```
 
-In CMUQ-MSA production, this app is intended to run at **tasks.cmuqmsa.org**. The central `cmuqmsa-infra` Caddy router sends that hostname to this app's nginx service on internal port `8080`; nginx serves the React frontend and proxies `/api` to FastAPI.
+Nginx listens on port **8080** inside the stack and proxies `/api` to the FastAPI backend on port **8000**.
 
 ## Testing
 
@@ -167,7 +164,7 @@ cd frontend && npm run test:run
 - Session cookies are signed (cryptographic validation)
 - Discord IDs stored plaintext (Discord handles auth, we just ping)
 - No data encryption at rest (add with `.env` config if needed)
-- Cloudflare Tunnel provides HTTPS (no self-signed certs)
+- A reverse proxy or tunnel in front of nginx can provide HTTPS (no self-signed certs required in the app container)
 
 ## Contributing
 
