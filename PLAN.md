@@ -1,6 +1,6 @@
 # CMU Qatar MSA Task Tracker
 
-A lightweight task tracking system for the CMU Qatar Muslim Student Association (MSA) to manage event rosters, task assignments, and team coordination.
+A lightweight task tracking system for the CMU Qatar Muslim Students Association (MSA) to manage event rosters, task assignments, and team coordination.
 
 ## Table of Contents
 

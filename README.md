@@ -1,6 +1,6 @@
 # Al-Amanah: CMU Qatar MSA Task Tracker
 
-A real-time **Semester → Week → Event → Task** management system for coordinating MSA (Muslim Student Association) events at CMU Qatar with Discord notifications.
+A real-time **Semester → Week → Event → Task** management system for coordinating MSA (Muslim Students Association) events at CMU Qatar with Discord notifications.
 
 ## Quick Start
 
@@ -186,7 +186,7 @@ cd frontend && npm run test:run
 
 ## License & Attribution
 
-Built for CMU Qatar's Muslim Student Association.  
+Built for CMU Qatar's Muslim Students Association.  
 Uses FastAPI, React, SQLAlchemy, Tailwind CSS, and APScheduler.
 
 ---
